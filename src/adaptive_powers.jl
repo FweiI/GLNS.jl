@@ -125,6 +125,7 @@ function takes in a set of bins and a weights array of the same length
 and selects a bin with probability equal to weight
 """
 function power_select(powers, total_weight, phase::Symbol)
+	# 根据总权重得到随机数
 	selection = rand()*total_weight[phase]
 	for i = 1:length(powers)
 		if selection < powers[i].weight[phase]
@@ -141,11 +142,13 @@ Update both insertion and deletion powers along with the total weights
 if we are a multiple of param[:adaptive_iter] iterations in trial
 """
 function power_update!(powers, param::Dict{Symbol,Any})
+	# 为各个阶段的插入/删除启发式函数更新权重
 	for phase in [:early, :mid, :late]
 		power_weight_update!(powers["insertions"], param, phase)
 		power_weight_update!(powers["removals"], param, phase)
 		power_weight_update!(powers["noise"], param, phase)
 	end
+	# 更新各个阶段的插入/删除启发式函数总权重
 	powers["insertion_total"] = total_power_weight(powers["insertions"])
 	powers["removal_total"] = total_power_weight(powers["removals"])
 	powers["noise_total"] = total_power_weight(powers["noise"])
@@ -156,15 +159,17 @@ end
 Update only at the end of each trial -- update based on average success
 over the trial
 """
-function power_weight_update!(powers::Array{Power, 1}, param::Dict{Symbol,Any},
-								phase::Symbol)
+function power_weight_update!(powers::Array{Power, 1}, param::Dict{Symbol,Any}, phase::Symbol)
+	# 遍历该阶段（phase）的启发式函数
 	for power in powers
+		# 如果本次冷启动选取次数大于0且配置冷启动次数大于0
 		if power.count[phase] > 0 && param[:cold_trials] > 0  # average after 2nd trial
-			power.weight[phase] = param[:epsilon] * power.scores[phase]/power.count[phase] +
-									(1 - param[:epsilon]) * power.weight[phase]
+			power.weight[phase] = param[:epsilon] * power.scores[phase]/power.count[phase] + (1 - param[:epsilon]) * power.weight[phase]
+		# 如果本次冷启动选取次数大于0
 		elseif power.count[phase] > 0
 			power.weight[phase] = power.scores[phase]/power.count[phase]
 		end
+		# 本次冷启动的各个启发式函数优化分数和选取次数清零
 		power.scores[phase] = 0
 		power.count[phase] = 0
 	end

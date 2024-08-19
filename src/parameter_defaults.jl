@@ -123,7 +123,9 @@ function parameter_settings(num_vertices, num_sets, sets, problem_instance, args
 	param[:budget] = get(args, :budget, typemin(Int64))
 	param[:timeout] = false
 	param[:budget_met] = false
+	# 节点数量最少的集合在sets中的序号
 	param[:min_set] = min_set(sets)
+	# 最小移除次数
 	param[:min_removals] = (param[:max_removals] > 1 ? 2 : 1)
 	print_params(param)
 	

@@ -25,7 +25,9 @@ end
 
 """ return the vertex before tour[i] on tour """
 @inline function prev_tour(tour, i)
+	# 如果i！=1，返回tour[i-1]
 	i != 1 && return tour[i - 1]
+	# 由于路径是环形的，所以当i=1时，返回tour的最后一个元素
 	return tour[length(tour)]
 end
 
@@ -35,6 +37,7 @@ end
 """ some insertions break tie by taking first minimizer -- this
 randomization helps avoid getting stuck choosing same minimizer """
 function pivot_tour!(tour::Array{Int64,1})
+	# 从路径中选择一个随机位置作为巡回路径起点
 	pivot = rand(1:length(tour))
 	tour = [tour[pivot:end]; tour[1:pivot-1]]
 end
@@ -149,8 +152,10 @@ end
 decide whether or not to accept a trial based on simulated annealing criteria
 """
 function accepttrial(trial_cost::Int64, current_cost::Int64, temperature::Float64)
-    if trial_cost <= current_cost
+    # 如果新解小于等于旧解，接受新解
+	if trial_cost <= current_cost
         accept_prob = 2.0
+	# 反之接受旧解的概率accept_prob = exp((current_cost - trial_cost)/temperature)
 	else
         accept_prob = exp((current_cost - trial_cost)/temperature)
     end
@@ -162,9 +167,11 @@ end
 decide whether or not to accept a trial based on simple probability
 """
 function accepttrial_noparam(trial_cost::Int64, current_cost::Int64, prob_accept::Float64)
+	# 如果新解小于等于旧解，接受新解
     if trial_cost <= current_cost
         return true
 	end
+	# 接受旧解的概率为prob_accept
 	return (rand() < prob_accept ? true : false)
 end
 
@@ -216,6 +223,7 @@ end
 
 """ rand_select for randomize over all minimizers """
 @inline function rand_select(a::Array{Int64, 1}, val::Int)
+	# 将数组a中等于val的元素的索引存储在inds中，然后从inds中随机选择一个索引
 	inds = Int[]
 	@inbounds for i=1:length(a)
 		a[i] == val && (push!(inds, i))

@@ -58,8 +58,8 @@ function read_file(filename)
     for line in readlines(s)
         line = strip(line)
         # debug
-#        println(line)
-#        println(parse_state)
+        # println(line)
+        # println(parse_state)
 
         # auto format select
         if parse_state == "UNKNOWN_FORMAT"

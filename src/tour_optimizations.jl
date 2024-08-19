@@ -70,11 +70,16 @@ compute the cost of inserting vertex v into position i of tour
 """
 @inline function insert_cost_lb(tour::Array{Int64,1}, dist::Array{Int64,2}, set::Array{Int64, 1}, setind::Int, 
 						   setdist::Distsv, bestv::Int, bestpos::Int, best_cost::Int)
+	# 遍历部分巡回轨迹上的节点
     @inbounds for i = 1:length(tour)
+		# v1为tour上i先前的一个节点（论文中的Vi中的x），tour[i]为当前节点（论文中的Vi中的y）
 		v1 = prev_tour(tour, i) # first check lower bound
+		# 根据论文3.4的公式计算该位置插入代价的下界lb = dist(Vi,x)+dist(Vi,y)-w(x,y)
+		# 这里与论文不一致，原论文的dist(Vi,u)应为代码中的min_sv(Vi,u)，但并不影响
 		lb = setdist.vert_set[v1, setind] + setdist.set_vert[setind, tour[i]] - dist[v1, tour[i]]
 		lb > best_cost && continue
-
+		
+		# 遍历Vi中的v
 		for v in set
 	        insert_cost = dist[v1, v] + dist[v, tour[i]] - dist[v1, tour[i]]
 	        if insert_cost < best_cost
