@@ -49,9 +49,10 @@ function remove_insert(current::Tour, best::Tour, dist::Array{Int64,2}, member::
 	else
 		randpdf_insertion!(trial.tour, sets_to_insert, dist, setdist, sets, insertion.value, noise)
 	end
+	# 随机进行重新优化
 	rand() < param[:prob_reopt] && opt_cycle!(trial, dist, sets, member, param, setdist, "partial")
 
-	# update power scores for remove and insert
+	# 论文5.4 score
 	score = 100 * max(current.cost - trial.cost, 0)/current.cost
 	insertion.scores[phase] += score
 	insertion.count[phase] += 1
@@ -120,8 +121,9 @@ end
 function randpdf_insertion!(tour::Array{Int64,1}, sets_to_insert::Array{Int64,1},
 							dist::Array{Int64, 2}, setdist::Distsv,
 							sets::Array{Any, 1}, power::Float64, noise::Power)
-
+	# sets_to_insert -> P_T\P_V
     mindist = [typemax(Int64) for i=1:length(sets_to_insert)]
+	# 遍历轨迹上的节点，计算每个节点与集合的最小有向距离
     @inbounds for i = 1:length(sets_to_insert)
         set = sets_to_insert[i]
         for vertex in tour
@@ -133,6 +135,7 @@ function randpdf_insertion!(tour::Array{Int64,1}, sets_to_insert::Array{Int64,1}
     new_vertex_in_tour = 0
 
     @inbounds while length(sets_to_insert) > 0
+		# 如果插入一次节点，需要更新该节点到未插入集合的最小有向距离
         if new_vertex_in_tour != 0
             for i = 1:length(sets_to_insert)
                 set = sets_to_insert[i]
@@ -141,15 +144,15 @@ function randpdf_insertion!(tour::Array{Int64,1}, sets_to_insert::Array{Int64,1}
                 end
             end
         end
+		# 根据mindist和power选择P_T\P_V中的集合
         set_index = pdf_select(mindist, power) # select set to insert from pdf
         # find the closest vertex and the best insertion in that vertex
         nearest_set = sets_to_insert[set_index]
+		# 获取选取集合中的插入节点和插入位置
 		if noise.name == "subset"
-			bestv, bestpos = insert_subset_lb(tour, dist, sets[nearest_set], nearest_set,
-											  setdist, noise.value)
+			bestv, bestpos = insert_subset_lb(tour, dist, sets[nearest_set], nearest_set, setdist, noise.value)
 		else
-			bestv, bestpos =
-					insert_lb(tour, dist, sets[nearest_set], nearest_set, setdist, noise.value)
+			bestv, bestpos = insert_lb(tour, dist, sets[nearest_set], nearest_set, setdist, noise.value)
 		end
         insert!(tour, bestpos, bestv)  # perform the insertion
         new_vertex_in_tour = bestv
@@ -226,6 +229,7 @@ end
 
 @inline function insert_subset_lb(tour::Array{Int64,1}, dist::Array{Int64,2}, set::Array{Int64, 1},
 							setind::Int, setdist::Distsv, noise::Float64)
+	# 遍历轨迹加入噪声，寻找合适的插入位置以及插入节点
 	best_cost = typemax(Int64)
 	bestv = 0
 	bestpos = 0

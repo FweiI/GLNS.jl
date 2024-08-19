@@ -91,27 +91,29 @@ function solver(problem_instance; args...)
 				if iter_count > param[:num_iterations]/2 && phase == :early
 					phase = :mid  # move to mid phase after half iterations
 				end
-					
+				
+				# 选择插入/删除启发式函数，删除插入N_r个节点，继续优化巡回路径，返回新解
 				trial = remove_insert(current, best, dist, membership, setdist, sets, powers, param, phase)
 
 		        # decide whether or not to accept trial
 				# 两个接受新解的条件 1.根据预设参数设定概率 2.根据温度设置概率
 				if accepttrial_noparam(trial.cost, current.cost, param[:prob_accept]) || accepttrial(trial.cost, current.cost, temperature)
-					# 如果求解模式为“slow”，优化巡回（意义？）
+					# 如果求解模式为“slow”，继续全部优化巡回
 					param[:mode] == "slow" && opt_cycle!(current, dist, sets, membership, param, setdist, "full")
 				    # 接受新解 如果trial.cost<原来current.cost，一定接受trial
 					current = trial
 		        end
 				# 如果新解小于当前最优解
 		        if current.cost < best.cost
-					# 距离上次优化的次数重置为1
+					# 距离上次更新优化的次数重置为1
 					count[:latest_improvement] = 1
 					# 标记已有first_improvement
 					count[:first_improvement] = true
-					# 重置热启动
+					# 重置热启动（第一次冷启动没有该功能）
 					if count[:cold_trial] > 1 && count[:warm_trial] > 1
 						count[:warm_trial] = 1
 					end
+					# 继续全部优化巡回
 					opt_cycle!(current, dist, sets, membership, param, setdist, "full")
 					# 更新最优解
 					best = current
@@ -137,12 +139,13 @@ function solver(problem_instance; args...)
 				print_best(count, param, best, lowest, init_time)
 			end
 			print_warm_trial(count, param, best, iter_count)
-			# on the first cold trial, we are just determining
+			# 每次冷启动初始an initial descent执行完毕，开启热启动
+			# 每次热启动执行完毕，重置相关参数继续热启动
 			count[:warm_trial] += 1
 			count[:latest_improvement] = 1
 			count[:first_improvement] = false
 		end
-		# 准备重新冷启动
+		# 准备下一个冷启动
 		lowest.cost > best.cost && (lowest = best)
 		count[:warm_trial] = 0
 		count[:cold_trial] += 1

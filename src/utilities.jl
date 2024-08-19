@@ -44,14 +44,15 @@ end
 
 
 function randomize_sets!(sets::Array{Any, 1}, sets_to_insert::Array{Int64, 1})
+	# 随机打乱sets_to_insert中集合的节点
 	for i in sets_to_insert
 		shuffle!(sets[i])
 	end
 end
 
-
+"""  create an array containing the set number for each vertex """
 function findmember(num_vertices::Int64, sets::Array{Any, 1})
-    """  create an array containing the set number for each vertex """
+	# 为每个节点找到所属的集合
 	member = zeros(Int64, num_vertices)
     num_verts = 0
     for i = 1:length(sets)
@@ -75,13 +76,12 @@ struct Distsv
 	min_sv::Array{Int64, 2}
 end
 
-
+"""
+Computes the minimum distance between each set and each vertex
+Also compute the minimum distance from a set to a vertex, ignoring direction
+This is used in insertion to choose the next set.
+"""
 function set_vertex_dist(dist::Array{Int64, 2}, num_sets::Int, member::Array{Int64,1})
-    """
-	Computes the minimum distance between each set and each vertex
-	Also compute the minimum distance from a set to a vertex, ignoring direction
-	This is used in insertion to choose the next set.
-	"""
     numv = size(dist, 1)
     dist_set_vert = typemax(Int64) * ones(Int64, num_sets, numv)
 	mindist = typemax(Int64) * ones(Int64, num_sets, numv)
@@ -132,6 +132,7 @@ end
 
 """ Find the set with the smallest number of vertices """
 function min_set(sets::Array{Any, 1})
+	# 找到节点数量最少的集合在sets中的索引
     min_size = length(sets[1])
 	min_index = 1
     for i = 2:length(sets)
@@ -181,6 +182,7 @@ end
 
 """  Compute the length of a tour  """
 @inline function tour_cost(tour::Array{Int64,1}, dist::Array{Int64,2})
+	# 计算巡回路径的长度
     tour_length = dist[tour[end], tour[1]]
     @inbounds for i in 1:length(tour)-1
     	tour_length += dist[tour[i], tour[i+1]]
@@ -192,11 +194,12 @@ end
 """
 Checks if a tour is feasible in that it visits each set exactly once.
 """
-function tour_feasibility(tour::Array{Int64,1}, membership::Array{Int64,1},
-					      num_sets::Int64)
+function tour_feasibility(tour::Array{Int64,1}, membership::Array{Int64,1}, num_sets::Int64)
+	# 检查巡回路径是否可行，即是否每个集合都被访问一次
     length(tour) != num_sets && return false
-
+	# 初始化bool数组长度为集合数量，均为false，用于检查每个集合是否被访问一次
     set_test = falses(num_sets)
+	# 遍历巡回路径中的每个节点，检查集合是否被访问一次
     for v in tour
         set_v = membership[v]
 		if set_test[set_v]
@@ -204,6 +207,7 @@ function tour_feasibility(tour::Array{Int64,1}, membership::Array{Int64,1},
 		end
 		set_test[set_v] = true
     end
+	# 检查集合是否都被访问一次
     for visited_set in set_test
         !visited_set && return false
     end
@@ -215,8 +219,10 @@ end
 #############  Incremental Shuffle ##################
 
 @inline function incremental_shuffle!(a::AbstractVector, i::Int)
+	# 从数组a中选择大于序号i的元素，与a[i]交换
     j = i + floor(Int, rand() * (length(a) + 1 - i))
    	a[j], a[i] = a[i], a[j]
+	# 返回原来的a[j],现在的a[i]
 	return a[i]
 end
 
