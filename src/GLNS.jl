@@ -45,7 +45,7 @@ function solver(problem_instance; args...)
 	start_time = time_ns()
 	# 预计算：setdist存储了3种2维数组：集合到节点最小距离、节点到集合最小距离、集合与节点之间最小有向距离
 	setdist = set_vertex_dist(dist, num_sets, membership)
-	# 为删除/插入启发式函数初始化（启发式名称、lambda、各个时期的概率权重、优化分数以及选取次数）
+	# 为删除/插入启发式函数、噪声初始化（启发式名称、lambda、各个时期的概率权重、优化分数以及选取次数）
 	# 各个时期概率权重初始化为1，并计算各个时期总权重，便于后续为各个时期概率抽取启发式函数
 	powers = initialize_powers(param)
 
@@ -58,7 +58,7 @@ function solver(problem_instance; args...)
 		# 第一次冷启动，初始化各个插入/删除启发式函数的权重...
 		if count[:cold_trial] == 1
 			powers = initialize_powers(param)
-		# 后续冷启动，根据先前各个插入/删除启发式函数优化效果更新权重...			
+		# 后续冷启动，根据先前冷启动各个插入/删除启发式函数、噪声优化效果更新权重...			
 		else
 			power_update!(powers, param)
 		end
@@ -71,13 +71,13 @@ function solver(problem_instance; args...)
 			iter_count = 1
 			# current存储当前解
 			current = Tour(copy(best.tour), best.cost)
-			# temperature为当前温度（模拟退火接受新解概率的相关参数，temperature越高，越容易接受新解）
+			# temperature为当前温度（模拟退火接受新解概率的相关参数，temperature越高，越容易接受不好的新解）
 			# 论文5.3 Acceptance Criteria(i): Tem_init = p1%*w(T_best)/ln(2)
 			temperature = 1.442 * param[:accept_percentage] * best.cost
 			# temperature冷却系数
 			cooling_rate = ((0.0005 * lowest.cost)/(param[:accept_percentage] * current.cost))^(1/param[:num_iterations])
 
-			# 如果进入第二阶段，进入late时期，降低温度
+			# 如果进入第二阶段热启动时期，进入late时期，降低温度
 			if count[:warm_trial]  > 0	  # if warm restart, then use lower temperature
 		        temperature *= cooling_rate^(param[:num_iterations]/2)
 				phase = :late
@@ -87,12 +87,12 @@ function solver(problem_instance; args...)
 			while count[:latest_improvement] <= 
 				(count[:first_improvement] ? param[:latest_improvement] : param[:first_improvement])
 				
-				# 如果iter_count迭代次数超过一半，进入mid时期
+				# 如果iter_count迭代次数超过一半，由early进入mid时期
 				if iter_count > param[:num_iterations]/2 && phase == :early
 					phase = :mid  # move to mid phase after half iterations
 				end
 				
-				# 选择插入/删除启发式函数，删除插入N_r个节点，继续优化巡回路径，返回新解
+				# 选择插入/删除启发式函数、噪声，删除插入N_r个节点，局部优化巡回路径，返回新解
 				trial = remove_insert(current, best, dist, membership, setdist, sets, powers, param, phase)
 
 		        # decide whether or not to accept trial

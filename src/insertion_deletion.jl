@@ -37,7 +37,7 @@ function remove_insert(current::Tour, best::Tour, dist::Array{Int64,2}, member::
 		sets_to_insert = segment_removal!(trial.tour, num_removals, member)
 	end
 
-	# 随机化P_V/P_T中的节点
+	# 随机化P_V/P_T中集合的节点
 	randomize_sets!(sets, sets_to_insert)
 	# 根据时期、总权重选择插入启发式函数
 	insertion = power_select(powers["insertions"], powers["insertion_total"], phase)
@@ -360,7 +360,7 @@ function distance_removal!(tour::Array{Int64,1}, dist::Array{Int64, 2}, num_to_r
 
 	# 均匀随机从轨迹中选取第一个删除节点
     seed_index = rand(1:length(tour))
-	# 将v_seed从属的集合加入到P_V/P_TV中
+	# 将v_seed从属的集合加入到P_V/P_T中
     push!(deleted_sets, member[tour[seed_index]])
 	# 将v_seed加入到V_removed中
     push!(deleted_vertices, tour[seed_index])
